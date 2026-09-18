@@ -223,6 +223,69 @@ body.running .btn-primary .icon-pause { display: block; }
 .at-label { color: var(--text-faint); font-size: 12px; text-transform: uppercase; letter-spacing: 1.4px; flex-shrink: 0; }
 .at-name { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ---------- smart routine (AI coach) ---------- */
+.coach-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.coach-card[data-on="true"] {
+  border-color: rgba(177, 151, 252, 0.45);
+  box-shadow: 0 0 26px rgba(124, 58, 237, 0.16);
+}
+.coach-head { display: flex; align-items: center; gap: 12px; }
+.coach-spark { font-size: 20px; }
+.coach-title-wrap { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.coach-title { font: 700 14.5px var(--font-display); letter-spacing: 0.3px; }
+.coach-sub { font-size: 12px; color: var(--text-faint); }
+
+.ai-switch {
+  position: relative; width: 46px; height: 26px; flex-shrink: 0;
+  border: 0; border-radius: 999px; padding: 0; cursor: pointer;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 0.25s;
+}
+.ai-switch i {
+  position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s;
+}
+.ai-switch[aria-checked="true"] { background: #7c3aed; }
+.ai-switch[aria-checked="true"] i { transform: translateX(20px); }
+
+.coach-body { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.coach-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: 12px; color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border);
+  border-radius: 999px; padding: 5px 11px;
+}
+.chip b { color: var(--text); font-weight: 600; margin-left: 2px; }
+.chip-trend { display: inline-flex; align-items: center; gap: 7px; }
+.trend-dots { display: inline-flex; gap: 3px; }
+.t-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); }
+.t-dot.ok { background: #b197fc; }
+.t-dot.fail { background: rgba(255, 120, 120, 0.75); }
+
+.goal-line { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-dim); }
+.goal-label { flex-shrink: 0; }
+.goal-label b { color: var(--text); font-variant-numeric: tabular-nums; }
+.goal-bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.goal-bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #7c3aed, #b197fc); transition: width 0.4s; }
+.goal-stepper { display: inline-flex; gap: 5px; flex-shrink: 0; }
+.mini-btn {
+  width: 24px; height: 24px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-strong);
+  color: var(--text-dim); cursor: pointer; font: 600 14px/1 var(--font-ui);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: color 0.2s, border-color 0.2s;
+}
+.mini-btn:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.25); }
+.coach-note { margin: 0; font-size: 12.5px; color: var(--text-dim); font-style: italic; }
+
+.settings-ai-note { margin: 10px 0 0; font-size: 12px; color: var(--text-faint); }
+
 /* ---------- stats ---------- */
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .stat {

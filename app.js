@@ -58,9 +58,121 @@
     } catch { /* ignore */ }
   };
 
+  /* ---------- Smart Routine — on-device adaptive coach ---------- */
+  const ai = (() => {
+    const BOUNDS = { focus: [5, 120], short: [2, 20], long: [8, 45] };
+    const state = store.get('pomo.ai', {
+      enabled: false,
+      plan: null, // { focus, short, long } — seeded from manual settings on first enable
+      goal: 8,    // pomodoros per day
+      cema: 0.75, // completion-rate exponential moving average (0..1)
+      consec: 0,  // focus sessions completed since the last long break actually finished
+      bonusLong: 0,
+      buckets: { m: { ok: 0, n: 0 }, a: { ok: 0, n: 0 }, e: { ok: 0, n: 0 } }, // time-of-day performance
+      history: [], // recent focus outcomes for the trend strip
+      note: 'Ready to learn your rhythm.',
+    });
+
+    const save = () => store.set('pomo.ai', state);
+    const ensurePlan = () => {
+      if (!state.plan) state.plan = { focus: settings.focus, short: settings.short, long: settings.long };
+    };
+    const pushHistory = (entry) => {
+      state.history.push(entry);
+      if (state.history.length > 150) state.history = state.history.slice(-150);
+    };
+    const bucketOf = (h) => (h < 5 ? 'e' : h < 12 ? 'm' : h < 17 ? 'a' : 'e');
+    const sample = (ok) => { state.cema = 0.7 * state.cema + 0.3 * ok; };
+
+    // Minutes each phase should run while Smart Routine is on.
+    function effective(kind) {
+      ensurePlan();
+      if (kind === 'focus') {
+        let v = state.plan.focus;
+        const b = state.buckets[bucketOf(new Date().getHours())];
+        if (b.n >= 3) {
+          const r = b.ok / b.n;
+          if (r < 0.55) v -= 2;      // this part of the day is historically hard — start smaller
+          else if (r > 0.85) v += 1; // historically strong — stretch a little
+        }
+        return clamp(v, BOUNDS.focus[0], BOUNDS.focus[1]);
+      }
+      if (kind === 'long') return clamp(state.plan.long + (state.bonusLong || 0), BOUNDS.long[0], BOUNDS.long[1]);
+      return clamp(state.plan.short, BOUNDS.short[0], BOUNDS.short[1]);
+    }
+
+    // Called after a focus session runs to completion.
+    function afterFocusComplete() {
+      ensurePlan();
+      state.consec += 1;
+      sample(1);
+      const b = bucketOf(new Date().getHours());
+      state.buckets[b].n += 1;
+      state.buckets[b].ok += 1;
+      pushHistory({ t: Date.now(), mode: 'focus', ok: 1 });
+
+      let delta;
+      let note;
+      if (state.cema >= 0.8) {
+        delta = state.consec >= 3 ? 2 : 1;
+        note = state.consec >= 3
+          ? `🔥 ${state.consec} in a row — stretching focus to ${state.plan.focus + delta}m`
+          : `💪 Strong run — nudging focus to ${state.plan.focus + delta}m`;
+      } else if (state.cema >= 0.55) {
+        delta = 0;
+        note = `🍅 Logged. Holding ${state.plan.focus}m focus`;
+      } else {
+        delta = -1;
+        note = `Keeping it doable — easing focus to ${state.plan.focus - 1}m`;
+      }
+      state.plan.focus = clamp(state.plan.focus + delta, BOUNDS.focus[0], BOUNDS.focus[1]);
+
+      const day = stats[todayKey()] || { count: 0 };
+      if (day.count === state.goal) note = `🎯 Daily goal of ${state.goal} hit — anything more is bonus!`;
+
+      state.note = note;
+      save();
+      renderCoach();
+      return note;
+    }
+
+    // Focus abandoned mid-session (skip / reset / mode switch while running).
+    function onAbandon(pctDone) {
+      ensurePlan();
+      sample(0);
+      const drop = pctDone >= 0.5 ? 1 : 3; // "so close" vs "too much at once"
+      state.plan.focus = clamp(state.plan.focus - drop, BOUNDS.focus[0], BOUNDS.focus[1]);
+      state.plan.short = clamp(state.plan.short + 1, BOUNDS.short[0], BOUNDS.short[1]);
+      pushHistory({ t: Date.now(), mode: 'focus', ok: 0 });
+      state.note = pctDone >= 0.5
+        ? `So close — easing to ${state.plan.focus}m focus`
+        : `Too much at once — trying ${state.plan.focus}m with ${state.plan.short}m breaks`;
+      save();
+      renderCoach();
+      toast(state.note);
+    }
+
+    // Break skipped while still fresh — that break type feels too long.
+    function onBreakSkipped(kind) {
+      ensurePlan();
+      const key = kind === 'long' ? 'long' : 'short';
+      state.plan[key] = clamp(state.plan[key] - 1, BOUNDS[key][0], BOUNDS[key][1]);
+      state.note = `Breaks feel long — ${key} break now ${state.plan[key]}m`;
+      save();
+      renderCoach();
+      toast(state.note);
+    }
+
+    return { state, save, ensurePlan, effective, afterFocusComplete, onAbandon, onBreakSkipped };
+  })();
+
   /* ---------- timer state ---------- */
+  // While Smart Routine is on, phase durations come from the adaptive plan.
+  const modeMinutes = (kind) =>
+    ai.state.enabled ? ai.effective(kind) : clamp(settings[kind], 1, 180);
+
   let mode = 'focus';
-  let total = settings.focus * 60;
+  let total = modeMinutes('focus') * 60;
   let remaining = total; // seconds (float while running)
   let running = false;
   let endTime = 0;
@@ -96,6 +208,20 @@
     soundIcon: $('#soundIcon'),
     toast: $('#toast'),
     favicon: $('#favicon'),
+    coachCard: $('#coachCard'),
+    coachBody: $('#coachBody'),
+    coachSub: $('#coachSub'),
+    aiToggle: $('#aiToggle'),
+    aiFocus: $('#aiFocus'),
+    aiShort: $('#aiShort'),
+    aiLong: $('#aiLong'),
+    aiTrend: $('#aiTrend'),
+    aiTrendDots: $('#aiTrendDots'),
+    aiGoalVal: $('#aiGoalVal'),
+    aiGoalFill: $('#aiGoalFill'),
+    aiNote: $('#aiNote'),
+    goalMinus: $('#goalMinus'),
+    goalPlus: $('#goalPlus'),
   };
 
   const RING_C = 2 * Math.PI * 138;
@@ -251,6 +377,47 @@
     renderActiveTask();
     renderStats();
     renderModes();
+    renderCoach();
+  }
+
+  /* ---------- smart routine UI ---------- */
+  function renderCoach() {
+    const on = ai.state.enabled;
+    el.coachCard.dataset.on = String(on);
+    el.coachBody.hidden = !on;
+    el.coachSub.textContent = on ? 'Auto-pilot — adapting timings to you' : 'Off — your manual timings';
+    el.aiToggle.setAttribute('aria-checked', String(on));
+    if (!on) return;
+
+    el.aiFocus.textContent = `${ai.effective('focus')}m`;
+    el.aiShort.textContent = `${ai.effective('short')}m`;
+    el.aiLong.textContent = `${ai.effective('long')}m`;
+    el.aiTrend.textContent = `${Math.round(ai.state.cema * 100)}%`;
+
+    el.aiTrendDots.innerHTML = '';
+    ai.state.history
+      .filter((h) => h.mode === 'focus')
+      .slice(-8)
+      .forEach((h) => {
+        const d = document.createElement('span');
+        d.className = 't-dot ' + (h.ok ? 'ok' : 'fail');
+        el.aiTrendDots.appendChild(d);
+      });
+
+    const day = stats[todayKey()] || { count: 0 };
+    const goal = Math.max(1, ai.state.goal);
+    el.aiGoalVal.textContent = `${day.count}/${goal}`;
+    el.aiGoalFill.style.width = `${Math.min(100, (day.count / goal) * 100)}%`;
+    el.aiNote.textContent = ai.state.note || '';
+  }
+
+  function setAiEnabled(on) {
+    ai.state.enabled = on;
+    if (on) ai.ensurePlan();
+    ai.save();
+    renderCoach();
+    if (!running) setMode(mode); // idle: apply new durations right away
+    toast(on ? '✨ Smart Routine on — timings adapt as you go' : 'Smart Routine off — manual timings');
   }
 
   /* ---------- actions ---------- */
@@ -262,7 +429,8 @@
 
   function setMode(next, { autostart = false } = {}) {
     mode = next;
-    total = clamp(settings[next], 1, 180) * 60;
+    if (next !== 'long') ai.state.bonusLong = 0; // fatigue bonus only applies while in a long break
+    total = modeMinutes(next) * 60;
     remaining = total;
     running = false;
     document.body.dataset.mode = next;
@@ -293,24 +461,42 @@
   const toggle = () => (running ? pause() : start());
 
   function reset() {
+    interruptSample();
     running = false;
     remaining = total;
     snapRing();
     renderAll();
   }
 
-  function nextModeAfter(wasFocus) {
-    if (wasFocus) {
-      return session.completedFocus % Math.max(1, settings.interval) === 0 ? 'long' : 'short';
+  function pickBreakMode() {
+    const n = Math.max(1, settings.interval);
+    const fatigued = ai.state.enabled && ai.state.consec >= n + 2; // long breaks keep getting skipped
+    if (fatigued || (session.completedFocus > 0 && session.completedFocus % n === 0)) {
+      return { mode: 'long', fatigued };
     }
-    return 'focus';
+    return { mode: 'short', fatigued: false };
+  }
+
+  // Record a learning sample when a running phase is interrupted early.
+  function interruptSample() {
+    if (!running || !ai.state.enabled) return;
+    if (mode === 'focus') {
+      const pctDone = (total - remaining) / total;
+      if (pctDone >= 0.05) ai.onAbandon(pctDone); // ignore accidental immediate skips
+    } else if (remaining / total > 0.3) {
+      ai.onBreakSkipped(mode);
+    }
   }
 
   function skip() {
+    interruptSample();
     const wasFocus = mode === 'focus';
-    const n = Math.max(1, settings.interval);
-    const longDue = wasFocus && session.completedFocus > 0 && session.completedFocus % n === 0;
-    setMode(wasFocus ? (longDue ? 'long' : 'short') : 'focus', {
+    const pick = wasFocus ? pickBreakMode() : { mode: 'focus', fatigued: false };
+    if (pick.mode === 'long') {
+      ai.state.bonusLong = pick.fatigued ? 5 : 0;
+      ai.save();
+    }
+    setMode(pick.mode, {
       autostart: wasFocus ? settings.autoStartBreaks : settings.autoStartFocus,
     });
   }
@@ -320,6 +506,7 @@
     running = false;
     remaining = 0;
     chime();
+    let coachNote = null;
 
     if (wasFocus) {
       session.completedFocus += 1;
@@ -340,8 +527,13 @@
       }
 
       notify('Pomodoro complete!', MODES.focus.done);
-      toast(MODES.focus.done);
+      if (ai.state.enabled) coachNote = ai.afterFocusComplete();
+      toast(coachNote || MODES.focus.done);
     } else {
+      if (mode === 'long') { // a long break actually finished — fatigue resets
+        ai.state.consec = 0;
+        ai.save();
+      }
       notify('Break finished', MODES.focus.done);
       toast(MODES.focus.done);
     }
@@ -350,7 +542,16 @@
     void el.timerCard.offsetWidth; // restart animation
     el.timerCard.classList.add('pulse');
 
-    setMode(nextModeAfter(wasFocus), {
+    let nextMode = 'focus';
+    if (wasFocus) {
+      const pick = pickBreakMode();
+      if (pick.mode === 'long') {
+        ai.state.bonusLong = pick.fatigued ? 5 : 0;
+        ai.save();
+      }
+      nextMode = pick.mode;
+    }
+    setMode(nextMode, {
       autostart: wasFocus ? settings.autoStartBreaks : settings.autoStartFocus,
     });
   }
@@ -609,7 +810,22 @@
   el.resetBtn.addEventListener('click', reset);
   el.skipBtn.addEventListener('click', skip);
   document.querySelectorAll('.mode-btn').forEach((b) => {
-    b.addEventListener('click', () => setMode(b.dataset.mode));
+    b.addEventListener('click', () => {
+      interruptSample();
+      setMode(b.dataset.mode);
+    });
+  });
+
+  el.aiToggle.addEventListener('click', () => setAiEnabled(!ai.state.enabled));
+  el.goalMinus.addEventListener('click', () => {
+    ai.state.goal = clamp(ai.state.goal - 1, 2, 16);
+    ai.save();
+    renderCoach();
+  });
+  el.goalPlus.addEventListener('click', () => {
+    ai.state.goal = clamp(ai.state.goal + 1, 2, 16);
+    ai.save();
+    renderCoach();
   });
 
   /* ---------- init ---------- */

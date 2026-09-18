@@ -77,6 +77,34 @@
       </div>
     </section>
 
+    <section class="coach-card" id="coachCard" data-on="false">
+      <div class="coach-head">
+        <span class="coach-spark" aria-hidden="true">✨</span>
+        <div class="coach-title-wrap">
+          <span class="coach-title">Smart Routine</span>
+          <span class="coach-sub" id="coachSub">Off — your manual timings</span>
+        </div>
+        <button class="ai-switch" id="aiToggle" role="switch" aria-checked="false" title="Toggle Smart Routine" aria-label="Toggle Smart Routine"><i></i></button>
+      </div>
+      <div class="coach-body" id="coachBody" hidden>
+        <div class="coach-chips">
+          <span class="chip">Focus <b id="aiFocus">25m</b></span>
+          <span class="chip">Break <b id="aiShort">5m</b></span>
+          <span class="chip">Long <b id="aiLong">15m</b></span>
+          <span class="chip chip-trend">Trend <b id="aiTrend">–</b><span class="trend-dots" id="aiTrendDots"></span></span>
+        </div>
+        <div class="goal-line">
+          <span class="goal-label">Today <b id="aiGoalVal">0/8</b></span>
+          <div class="goal-bar"><i id="aiGoalFill"></i></div>
+          <span class="goal-stepper">
+            <button id="goalMinus" class="mini-btn" aria-label="Decrease daily goal">−</button>
+            <button id="goalPlus" class="mini-btn" aria-label="Increase daily goal">+</button>
+          </span>
+        </div>
+        <p class="coach-note" id="aiNote"></p>
+      </div>
+    </section>
+
     <section class="stats-row" aria-label="Statistics">
       <div class="stat">
         <div class="stat-value" id="statToday">0</div>
