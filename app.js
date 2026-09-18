@@ -227,6 +227,18 @@
   const RING_C = 2 * Math.PI * 138;
   el.ring.style.strokeDasharray = String(RING_C);
 
+  /* ---------- run-state persistence (survives page switches) ---------- */
+  const RUN_KEY = 'pomo.runstate';
+  let lastRunPersist = 0;
+  function persistRun() {
+    lastRunPersist = Date.now();
+    store.set(RUN_KEY, {
+      mode, total, remaining, running,
+      endTime: running ? endTime : 0,
+      savedAt: Date.now(),
+    });
+  }
+
   /* ---------- audio ---------- */
   let audioCtx = null;
   const getCtx = () => {
@@ -437,6 +449,7 @@
     el.phase.textContent = MODES[next].phase;
     snapRing();
     renderAll();
+    persistRun();
     if (autostart) start();
   }
 
@@ -466,6 +479,7 @@
     remaining = total;
     snapRing();
     renderAll();
+    persistRun();
   }
 
   function pickBreakMode() {
@@ -554,6 +568,7 @@
     setMode(nextMode, {
       autostart: wasFocus ? settings.autoStartBreaks : settings.autoStartFocus,
     });
+    persistRun();
   }
 
   /* ---------- main loop (timestamp-based, survives tab throttling) ---------- */
@@ -829,9 +844,34 @@
   });
 
   /* ---------- init ---------- */
-  document.body.dataset.mode = mode;
-  el.phase.textContent = MODES[mode].phase;
   renderSoundIcon();
   renderTasks();
+
+  // Restore a session left running on another page (or before a reload)
+  (function restoreRun() {
+    const rs = store.get(RUN_KEY, null);
+    document.body.dataset.mode = mode;
+    el.phase.textContent = MODES[mode].phase;
+    if (!rs || !rs.mode || !MODES[rs.mode]) return;
+    mode = rs.mode;
+    total = Number(rs.total) || total;
+    document.body.dataset.mode = mode;
+    el.phase.textContent = MODES[mode].phase;
+    if (rs.running && rs.endTime) {
+      if (rs.endTime > Date.now()) {
+        endTime = rs.endTime;
+        remaining = Math.max(0, (endTime - Date.now()) / 1000);
+        running = true;
+      } else {
+        remaining = 0; // finished while we were away — credit it
+        renderTime();
+        complete();
+        return;
+      }
+    } else {
+      remaining = clamp(Number(rs.remaining) || 0, 0, total);
+    }
+  })();
+
   renderAll();
 })();

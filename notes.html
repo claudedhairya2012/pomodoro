@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Colorful rich-text notes with images, checklists, export and backup." />
+  <title>Pomodoro — Notes</title>
+  <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="notes">
+  <div class="bg-glow bg-glow-a" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-b" aria-hidden="true"></div>
+
+  <main class="app app-wide">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">🍅</span>
+        <span class="brand-name">Pomodoro</span>
+      </div>
+      <nav class="page-nav" aria-label="Pages">
+        <a class="nav-link" href="timer.html" title="Timer"><span class="nav-ico">⏱</span><span class="nav-txt">Timer</span></a>
+        <a class="nav-link active" href="notes.html" title="Notes"><span class="nav-ico">📝</span><span class="nav-txt">Notes</span></a>
+        <a class="nav-link" href="calendar.html" title="Calendar"><span class="nav-ico">📅</span><span class="nav-txt">Calendar</span></a>
+      </nav>
+      <div class="top-actions">
+        <button class="icon-btn lock-btn" data-lock title="Lock (L)" aria-label="Lock">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="notes-layout">
+      <!-- sidebar: list -->
+      <aside class="card notes-side">
+        <div class="side-head">
+          <h2>Notes <span class="count-badge" id="noteCount">0</span></h2>
+          <div class="side-actions">
+            <button class="icon-btn" id="importBtn" title="Import backup (.json)" aria-label="Import backup">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            </button>
+            <button class="icon-btn" id="backupBtn" title="Export all notes (.json backup)" aria-label="Export backup">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg>
+            </button>
+            <button class="icon-btn add-note-btn" id="newBtn" title="New note" aria-label="New note">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+        </div>
+        <input id="searchInput" class="search-input" type="search" placeholder="Search notes…" autocomplete="off" />
+        <ul class="note-list" id="noteList"></ul>
+        <p class="empty-note" id="notesEmpty">No notes yet — create your first one ✍️</p>
+      </aside>
+
+      <!-- editor -->
+      <section class="card note-editor" id="editorWrap" hidden>
+        <div class="editor-top">
+          <input id="noteTitle" type="text" maxlength="120" placeholder="Title" autocomplete="off" />
+          <div class="editor-actions">
+            <button class="icon-btn" id="pinBtn" title="Pin to top" aria-label="Pin note">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M9 4h6"/><path d="M10 4v6l-4 5h12l-4-5V4"/><line x1="12" y1="15" x2="12" y2="21"/></svg>
+            </button>
+            <button class="icon-btn" id="exportHtmlBtn" title="Export note (.html with images)" aria-label="Export note as HTML">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg>
+            </button>
+            <button class="icon-btn" id="deleteBtn" title="Delete note" aria-label="Delete note">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="swatches" id="swatches" aria-label="Note colour"></div>
+
+        <div class="toolbar" id="toolbar" role="toolbar" aria-label="Formatting">
+          <button class="tb-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button class="tb-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+          <button class="tb-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <button class="tb-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn tb-h" data-block="H1" title="Heading 1">H1</button>
+          <button class="tb-btn tb-h" data-block="H2" title="Heading 2">H2</button>
+          <button class="tb-btn tb-h" data-block="H3" title="Heading 3">H3</button>
+          <button class="tb-btn tb-h" data-block="P" title="Paragraph">¶</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-cmd="insertUnorderedList" title="Bullet list">• List</button>
+          <button class="tb-btn" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+          <button class="tb-btn" id="checklistBtn" title="Checklist">☑ Check</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn tb-mark" data-cmd="hiliteColor" data-value="#ffd43b" title="Highlight">Mark</button>
+          <button class="tb-btn" id="clearFmtBtn" title="Clear formatting">⨯ Clear</button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn tb-img" id="imageBtn" title="Insert image">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 15-4.5-4.5L7 20"/></svg>
+            Image
+          </button>
+        </div>
+
+        <div class="note-surface c0" id="noteEditor" contenteditable="true" data-ph="Start writing… use the toolbar, drop or paste images anywhere."></div>
+
+        <div class="editor-foot">
+          <span id="counts">0 words · 0 chars</span>
+          <span id="saveState" class="save-state"></span>
+        </div>
+      </section>
+
+      <section class="card note-empty" id="emptyEditor">
+        <div class="note-empty-emoji">✍️</div>
+        <p>Select a note from the list,<br/>or create a new one.</p>
+        <button class="btn-primary btn-small" id="emptyNewBtn">New note</button>
+      </section>
+    </div>
+  </main>
+
+  <input type="file" id="imgInput" accept="image/*" multiple hidden />
+  <input type="file" id="importInput" accept=".json,application/json" hidden />
+
+  <div class="img-bar" id="imgBar" hidden>
+    <button id="imgDownload" title="Download this image">⬇ Save</button>
+    <button id="imgRemove" title="Remove from note">🗑 Remove</button>
+    <button id="imgClose" title="Close">✕</button>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="auth.js"></script>
+  <script src="notes.js"></script>
+</body>
+</html>

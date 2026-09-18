@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Month calendar with events and pomodoro history." />
+  <title>Pomodoro — Calendar</title>
+  <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="calendar">
+  <div class="bg-glow bg-glow-a" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-b" aria-hidden="true"></div>
+
+  <main class="app app-wide">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">🍅</span>
+        <span class="brand-name">Pomodoro</span>
+      </div>
+      <nav class="page-nav" aria-label="Pages">
+        <a class="nav-link" href="timer.html" title="Timer"><span class="nav-ico">⏱</span><span class="nav-txt">Timer</span></a>
+        <a class="nav-link" href="notes.html" title="Notes"><span class="nav-ico">📝</span><span class="nav-txt">Notes</span></a>
+        <a class="nav-link active" href="calendar.html" title="Calendar"><span class="nav-ico">📅</span><span class="nav-txt">Calendar</span></a>
+      </nav>
+      <div class="top-actions">
+        <button class="icon-btn lock-btn" data-lock title="Lock (L)" aria-label="Lock">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="cal-layout">
+      <section class="card cal-card">
+        <header class="cal-head">
+          <h2 id="calTitle" class="cal-title">—</h2>
+          <div class="cal-nav">
+            <button class="btn-ghost cal-nav-btn" id="todayBtn" title="Go to today">Today</button>
+            <button class="icon-btn" id="prevBtn" aria-label="Previous month">
+              <svg class="icon" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>
+            </button>
+            <button class="icon-btn" id="nextBtn" aria-label="Next month">
+              <svg class="icon" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+        </header>
+        <div class="cal-week" aria-hidden="true">
+          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <p class="cal-legend">Shading shows pomodoros completed · 🍅 n = sessions that day</p>
+      </section>
+
+      <aside class="cal-side">
+        <div class="card day-card">
+          <h3 id="dayTitle">—</h3>
+          <p class="day-stats" id="dayStats"></p>
+          <form class="event-form" id="eventForm">
+            <input id="eventTitle" type="text" maxlength="80" placeholder="Add an event…" autocomplete="off" />
+            <div class="event-row">
+              <input id="eventTime" type="time" aria-label="Event time" />
+              <button type="submit" class="btn-primary btn-small">Add</button>
+            </div>
+          </form>
+          <ul class="event-list" id="eventList"></ul>
+          <p class="empty-note" id="dayEmpty" hidden>No events this day.</p>
+        </div>
+
+        <div class="card upcoming-card">
+          <h3>Upcoming</h3>
+          <ul class="upcoming-list" id="upcomingList"></ul>
+          <p class="empty-note" id="upcomingEmpty" hidden>Nothing planned ahead.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="auth.js"></script>
+  <script src="calendar.js"></script>
+</body>
+</html>

@@ -1,50 +1,81 @@
-# 🍅 Pomodoro — Focus Timer
+# 🍅 Pomodoro Suite
 
-A beautiful, self-contained Pomodoro timer web app. No build step, no dependencies — just open it in a browser.
+A beautiful, self-contained productivity suite: a Pomodoro focus timer with an on-device AI coach, a rich Notes app, and a Calendar — locked behind a PIN screen. No build step, no dependencies, no network calls.
 
-![modes](https://img.shields.io/badge/modes-focus%20%7C%20short%20%7C%20long-ff7a70) ![deps](https://img.shields.io/badge/dependencies-0-3fdcb4)
+![pages](https://img.shields.io/badge/pages-lock%20%7C%20timer%20%7C%20notes%20%7C%20calendar-ff7a70) ![deps](https://img.shields.io/badge/dependencies-0-3fdcb4)
 
-## Features
+## 🔒 Pages & PINs
+
+Opening the app shows the **lock screen**. Enter a PIN (keypad or keyboard):
+
+| PIN | Opens |
+|---|---|
+| `123` | ⏱ Timer — focus timer + Smart Routine |
+| `1234` | 📅 Calendar — month view, events, pomodoro history |
+| `12345` | 📝 Notes — rich-text notes with images |
+
+You stay unlocked in the tab until you press the 🔒 lock button (or hit `L`). This is a client-side lock screen for privacy/organisation — not real security (everything runs in the browser).
+
+## ⏱ Timer (timer.html)
 
 - **Focus / Short Break / Long Break** modes with an animated SVG progress ring
-- **Smart cycle** — automatically suggests a long break after every N pomodoros (default 4), shown as cycle dots
-- **Timestamp-based engine** — stays accurate even when the tab is throttled in the background
-- **Task list** — add tasks, click to make one active, 🍅 counter per task, complete/rename (double-click)/delete, persisted in `localStorage`
-- **Stats** — pomodoros today, focus time today, all-time sessions
-- **Sound & notifications** — a pleasant synthesized chime (Web Audio, no assets), desktop notifications, live timer in the tab title + progress favicon
-- **Settings** — custom durations, long-break interval, auto-start breaks/pomodoros, volume
-- **Keyboard shortcuts** — `Space` start/pause · `R` reset · `N` skip · `M` mute · `1/2/3` switch modes
-- **✨ Smart Routine (AI coach)** — a toggle that manages your routine for you (see below)
-- Fully responsive, respects `prefers-reduced-motion`
+- **Smart cycle** — long break after every N pomodoros, shown as cycle dots
+- **Timestamp-based engine** — accurate even when the tab is throttled; a running session survives switching to Notes/Calendar and even reloads
+- **Task list** with per-task 🍅 counts, **stats** (today / focus time / all-time)
+- **Settings** — durations, interval, auto-starts, volume, notifications
+- **Keyboard** — `Space` start/pause · `R` reset · `N` skip · `M` mute · `1/2/3` modes
 
-## ✨ Smart Routine
+## ✨ Smart Routine (AI coach)
 
-Flip the **Smart Routine** switch and an on-device adaptive coach takes over the routine management:
+Flip the **Smart Routine** switch and an on-device adaptive coach manages your routine:
 
-- **Learns from how you actually perform** — completed sessions, mid-session abandons, and skipped breaks all feed a completion-trend model
-- **Adapts durations automatically** — strong streaks stretch focus time, early quits shrink it and lengthen breaks, skipped breaks get trimmed
-- **Time-of-day awareness** — if you historically struggle in a part of the day, it starts you smaller there; strong parts of the day get a little more
-- **Fatigue management** — if long breaks keep getting skipped, it forces one and extends it by 5 minutes; a completed long break resets fatigue
-- **Daily goal** — progress bar with a stepper; it congratulates you when you hit it
-- **Explainable** — every decision shows up as a coach note ("🔥 3 in a row — stretching focus to 31m") in the card and as a toast
+- Learns from completions, mid-session abandons and skipped breaks
+- Adapts focus/break lengths; time-of-day buckets tune your starting point
+- Forces + extends long breaks when fatigue builds (breaks being skipped)
+- Daily goal with progress bar; every decision shown as an explainable coach note
 
-Everything runs locally in your browser (rules + trend statistics, no network calls, no data leaves the device). Manual timings in Settings still apply whenever the toggle is off.
+Fully local — rules + trend statistics in `localStorage`, no network, no keys.
+
+## 📝 Notes (notes.html)
+
+- Multiple notes with **8 pastel colours**, pinning, search and autosave
+- **Rich text** — bold / italic / underline / strikethrough, H1–H3, bullet & numbered lists, **checklists**, highlight, clear formatting
+- **Images** — insert via toolbar, **drag & drop**, or **paste** (auto-compressed); click an image to download or remove it
+- **Export** — any note as a standalone `.html` (images embedded); all notes as a `.json` backup; **import** backups with smart merge (newer edits win)
+
+## 📅 Calendar (calendar.html)
+
+- Month grid with today highlight, month navigation
+- **Events** — add with optional time per day, shown as chips + an Upcoming list
+- **Pomodoro history** — each day is shaded by sessions completed (from the timer's stats) with a 🍅 count
+- Click any day to see its stats and manage its events
 
 ## Run it
 
-Any static file server works:
-
 ```bash
 python3 -m http.server 4173
-# then open http://localhost:4173
+# open http://localhost:4173 → enter a PIN
 ```
 
-Or simply open `index.html` directly in your browser.
+Or open `index.html` directly in a browser.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `index.html` | Markup & structure |
-| `styles.css` | Theme (per-mode accent colors), layout, modals |
-| `app.js` | Timer engine, tasks, stats, audio, notifications |
+| `index.html` | 🔒 Lock screen (PIN pad) |
+| `timer.html` / `app.js` | Timer + Smart Routine |
+| `notes.html` / `notes.js` | Notes app |
+| `calendar.html` / `calendar.js` | Calendar |
+| `auth.js` | PIN auth + page guard |
+| `styles.css` | Shared theme + per-page styles |
+
+## Tests
+
+Minimal DOM-shim test suites that run the real scripts under Node:
+
+```bash
+node tests/test-timer.js           # timer lifecycle, tasks, settings
+node tests/test-ai.js              # Smart Routine adaptations
+node tests/test-notes-calendar.js  # auth/PINs, notes, calendar
+```
